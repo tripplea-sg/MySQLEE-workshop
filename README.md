@@ -66,16 +66,26 @@ mysqld_safe --defaults-file=/home/opc/db/3307/my.cnf &
 mysqld_safe --defaults-file=/home/opc/db/3308/my.cnf &
 ```
 ## 2. Create InnoDB Cluster:
+Install MySQL Router
+```
+cd /home/opc/software
+unzip MySQL-Shell-8.0.30.zip
+sudo  rpm -ivh mysql-shell-commercial-8.0.30-1.1.el7.x86_64.rpm
+```
 Run configure Instance on all 3 databases
 ```
 mysqlsh -- dba configure-instance { --host=127.0.0.1 --port=3306 --user=root --instance-password=root } --clusterAdmin=gradmin --clusterAdminPassword='grpass' --interactive=false --restart=true
 
-mysqlsh -- dba configure-instance { --host=127.0.0.1 --port=3312 --user=root } --clusterAdmin=gradmin --clusterAdminPassword='grpass' --interactive=false --restart=true
+mysqlsh -- dba configure-instance { --host=127.0.0.1 --port=3307 --user=root } --clusterAdmin=gradmin --clusterAdminPassword='grpass' --interactive=false --restart=true
 
-mysqlsh -- dba configure-instance { --host=127.0.0.1 --port=3313 --user=root } --clusterAdmin=gradmin --clusterAdminPassword='grpass' --interactive=false --restart=true
+mysqlsh -- dba configure-instance { --host=127.0.0.1 --port=3308 --user=root } --clusterAdmin=gradmin --clusterAdminPassword='grpass' --interactive=false --restart=true
 ```
 Create cluster on 3306
 ```
+mysqlsh gradmin:grpass@localhost:3306 -- dba createCluster mycluster --consistency=BEFORE_ON_PRIMARY_FAILOVER
+
+mysql -uroot -h127.0.0.1 -proot -e "alter table world_x.city_info_encrypted add constraint pk_1 primary key (id)"
+
 mysqlsh gradmin:grpass@localhost:3306 -- dba createCluster mycluster --consistency=BEFORE_ON_PRIMARY_FAILOVER
 ```
 Add instance 3307 into the cluster using "clone"
@@ -90,11 +100,33 @@ Check cluster status
 ```
 mysqlsh gradmin:grpass@localhost:3306 -- cluster status
 ```
-## 3. Install MySQL Router
+## 3. Setup MySQL Router
+Extract and install router
 ```
-mysqlrouter --bootstrap gradmin:grpass@localhost:3306 --directory router --account myrouter --account-create always --force
+unzip MySQL-Router-8.0.30.zip
+tar -zxvf mysql-router-commercial-8.0.30-el7-x86_64.tar.gz
+```
+Setup and run router
+```
+mysql-router-commercial-8.0.30-el7-x86_64/bin/mysqlrouter --bootstrap gradmin:grpass@localhost:3306 --directory router --account myrouter --account-create always --force
 
 router/start.sh
+
+ps -ef | grep mysqlrouter
+```
+Connect to PRIMARY from MySQL Router
+```
+mysql -ugradmin -pgrpass -h127.0.0.1 -P6446 -e "select @@port";
+```
+Connect to SECONDARY from MySQL Router
+```
+mysql -ugradmin -pgrpass -h127.0.0.1 -P6447 -e "select @@port";
+
+mysql -ugradmin -pgrpass -h127.0.0.1 -P6447 -e "select @@port";
+```
+## 4. Online Maintenance
+Shutdown instance 3306
 ```
 
+```
 
