@@ -90,7 +90,7 @@ Check cluster status
 ```
 mysqlsh gradmin:grpass@localhost:3306 -- cluster status
 ```
-## Install MySQL Router
+## 3. Install MySQL Router
 ```
 mysqlrouter --bootstrap gradmin:grpass@localhost:3306 --directory router --account myrouter --account-create always --force
 
